@@ -10,11 +10,15 @@ _log_message() {
 }
 
 log() {
-    _log_message 3 "$@"
+    _log_message 2 "$@"
 }
 
 error() {
     _log_message 1 "Error: $*"
+}
+
+warning() {
+    _log_message 3 "Warning: $*"
 }
 
 show_usage() {
@@ -135,20 +139,36 @@ esac
 
 packages_not_found=()
 
+# small utility to check whether the first passed version number is greater than or equal to the second one
+version_ge() {
+    local newer_version
+    newer_version="$(echo -e "$1\\n$2" | sort -V | tail -n1 | tr -d '\n')"
+    [[ "$newer_version" == "$2" ]] && return 0
+    return 1
+}
+
+
 for file_browser in "${file_browsers[@]}"; do
     log "Looking for extension package for file browser $file_browser on distro $distro..."
 
     upstream_package=owncloud-client-"$file_browser"
 
+    debian_ubuntu_package="$file_browser"-owncloud
+
+    distro_package=
+
     case "$distro" in
         ubuntu|debian)
-            distro_package="$file_browser"-owncloud
+            [[ "$distro" == "ubuntu" ]] && version_to_check=22.04 || version_to_check=12
+
+            if version_ge "$VERSION_ID" "$version_to_check"; then
+                warning "distro-provided package is incompatible, skipping"
+            else
+                distro_package="$debian_ubuntu_package"
+            fi
             ;;
         # CentOS doesn't provide a distro package, on Fedora/openSUSE, it uses the same name as our upstream package
         opensuse|fedora|centos)
-            ;;
-        centos)
-            distro_package=
             ;;
     esac
 
@@ -156,6 +176,10 @@ for file_browser in "${file_browsers[@]}"; do
     package_found=
 
     for package in "$upstream_package" "$distro_package"; do
+        if [[ "$package" == "" ]]; then
+            continue
+        fi
+
         if check_package "$package"; then
             package_found="$package"
         fi
