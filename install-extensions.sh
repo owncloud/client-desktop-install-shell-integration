@@ -137,7 +137,8 @@ case "$distro" in
         ;;
 esac
 
-packages_not_found=()
+installed_packages=()
+installation_failed=()
 
 # small utility to check whether the first passed version number is greater than or equal to the second one
 version_ge() {
@@ -182,11 +183,20 @@ for file_browser in "${file_browsers[@]}"; do
 
         if check_package "$package"; then
             package_found="$package"
+
+            if install_package "$package"; then
+                installed_packages+=("$package")
+            else
+                installation_failed+=("$package")
+            fi
+
+            # we just try to install one of them
+            break
         fi
     done
 
     if [[ "$package_found" == "" ]]; then
-        error "could not find suitable package"
+        error "could not find suitable package for file browser $file_browser"
         packages_not_found+=("$package")
         continue
     fi
@@ -195,9 +205,24 @@ for file_browser in "${file_browsers[@]}"; do
     (set -x && install_package "$package_found") || error "installation canceled"
 done
 
-if [[ "${#packages_not_found[@]}" -gt 0 ]]; then
+has_error=0
+if [[ "${#installed_packages[@]}" -gt 0 ]]; then
     log
-    error "Could not find any compatible packages to install"
+    log "the following packages were installed successfully: ${installed_packages[*]}"
+else
+    log
+    error "could not find any compatible packages to install"
+    has_error=1
+fi
+
+if [[ "${#installation_failed[@]}" -gt 0 ]]; then
+    log
+    error "the following packages failed to install properly: ${installed_packages[*]}"
+    log "See the log above for more information"
+    has_error=1
+fi
+
+if [[ "$has_error" != 0 ]]; then
     log
     log "You might want to set up ownCloud's repository for your distribution."
     log "See https://owncloud.com/desktop-app/ for more information."
