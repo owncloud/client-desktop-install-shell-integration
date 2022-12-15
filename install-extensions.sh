@@ -98,13 +98,34 @@ if [[ ${#file_browsers[@]} -eq 0 ]]; then
     exit 5
 fi
 
+for command in sudo pkexec; do
+    if type "$command" &>/dev/null; then
+        sudo_command=("$command")
+        break
+    fi
+done
+
+if [[ "$(id -u)" == 0 ]]; then
+    # we need some "dummy" command, calling a subshell works reasonably well
+    sudo_command=("sh", "-c")
+fi
+
+if [[ -z "$sudo_command" ]]; then
+    error "sudo command not found and script not run as root"
+    log
+    log "This script needs root access to install packages."
+    log "We highly recommend you to install sudo or pkexec to allow the script to selectively request privileges only where necessary."
+    log "If this is not an option (or packages are not available), please re-run the entire script with root privileges."
+    exit 6
+fi
+
 case "$distro" in
     ubuntu|debian)
         check_package() {
             apt info "$1" &>/dev/null
         }
         install_package() {
-            sudo apt install "$1"
+            "${sudo_command[@]}" apt install "$1"
         }
         ;;
     opensuse)
@@ -112,7 +133,7 @@ case "$distro" in
             zypper search -x "$1" &>/dev/null
         }
         install_package() {
-            sudo zypper install "$1"
+            "${sudo_command[@]}" zypper install "$1"
         }
         ;;
     fedora)
@@ -120,7 +141,7 @@ case "$distro" in
             dnf info "$1" &>/dev/null
         }
         install_package() {
-            sudo dnf install "$1"
+            "${sudo_command[@]}" dnf install "$1"
         }
         ;;
     centos)
@@ -128,7 +149,7 @@ case "$distro" in
             yum info "$1" &>/dev/null
         }
         install_package() {
-            yum install "$1"
+            "${sudo_command[@]}" yum install "$1"
         }
         ;;
     *)
