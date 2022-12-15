@@ -197,7 +197,8 @@ done
 
 if [[ "${#packages_not_found[@]}" -gt 0 ]]; then
     log
-    error "packages ${packages_not_found[*]} could not be found"
+    error "Could not find any compatible packages to install"
+    log
     log "You might want to set up ownCloud's repository for your distribution."
     log "See https://owncloud.com/desktop-app/ for more information."
     exit 8
