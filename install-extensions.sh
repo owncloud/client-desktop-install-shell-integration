@@ -144,8 +144,8 @@ for file_browser in "${file_browsers[@]}"; do
         ubuntu|debian)
             distro_package="$file_browser"-owncloud
             ;;
-        opensuse|fedora)
-            distro_package="$upstream_package"
+        # CentOS doesn't provide a distro package, on Fedora/openSUSE, it uses the same name as our upstream package
+        opensuse|fedora|centos)
             ;;
         centos)
             distro_package=
