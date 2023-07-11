@@ -107,7 +107,7 @@ done
 
 if [[ "$(id -u)" == 0 ]]; then
     # we need some "dummy" command, calling a subshell works reasonably well
-    sudo_command=("sh" "-c")
+    sudo_command=("sh" "-c" "\$0 \$@")
 fi
 
 if [[ -z "$sudo_command" ]]; then
